@@ -49,3 +49,13 @@ export const loader = ({ request, params }: LoaderFunctionArgs) => {
         // };
     });
 };
+
+export const config = { runtime: 'edge' };
+
+let initialDate = Date.now();
+
+export function headers() {
+    return {
+        'x-edge-age': Date.now() - initialDate,
+    };
+}

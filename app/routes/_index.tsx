@@ -15,21 +15,25 @@ export const meta: MetaFunction = () => {
 export const loader = async ({ request }: LoaderFunctionArgs) => {
     const session = await getSession(request.headers.get("Cookie"))
     let headers: { [key: string]: any } = {}
-    if (session.data.gameId) {
-        console.log('got game id?', session.data.gameId)
-        const client = await clientPromise
-        const db = client.db("mixtwo")
-        const gameInfo = await db.collection<Game>("game").findOne({ gameId: session.data.gameId })
-        if (gameInfo?.startedAt) {
-            return redirect(`/game/${session.data.gameId}/play`)
-        } else if (gameInfo && !gameInfo.endAt) {
-            return redirect(`/game/${session.data.gameId}`)
-        }
-        headers = {
-            headers: {
-                "Set-Cookie": await destroySession(session)
+    try {
+        if (session.data.gameId) {
+            console.log('got game id?', session.data.gameId)
+            const client = await clientPromise
+            const db = client.db("mixtwo")
+            const gameInfo = await db.collection<Game>("game").findOne({ gameId: session.data.gameId })
+            if (gameInfo?.startedAt) {
+                return redirect(`/game/${session.data.gameId}/play`)
+            } else if (gameInfo && !gameInfo.endAt) {
+                return redirect(`/game/${session.data.gameId}`)
+            }
+            headers = {
+                headers: {
+                    "Set-Cookie": await destroySession(session)
+                }
             }
         }
+    } catch (e) {
+        console.log(e)
     }
     return json({}, headers)
 }
