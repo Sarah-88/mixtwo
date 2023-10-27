@@ -1,7 +1,18 @@
+import { LoaderArgs } from "@vercel/remix";
 import { emitter, eventStream } from "emitter.server";
 import { Events } from "types";
 
-export const loader = ({ request, params }: { request: any, params: any }) => {
+export const config = { runtime: 'edge' };
+
+let initialDate = Date.now();
+
+export function headers() {
+    return {
+        'x-edge-age': Date.now() - initialDate,
+    };
+}
+
+export const loader = ({ request, params }: LoaderArgs) => {
     return eventStream(request, (send) => {
         function handleUpdater(eventName: any, data?: any) {
             let dataReturn: Events = { event: eventName }
@@ -35,25 +46,5 @@ export const loader = ({ request, params }: { request: any, params: any }) => {
             emitter.removeListener(`update-${params.id}`, handleUpdater)
             emitter.removeListener(`notify-${params.id}`, handleMsg)
         };
-        // const interval = setInterval(() => {
-        //     // You can send events to the client via the `send` function
-        //     send('greeting', JSON.stringify({ hello: 'world' }))
-        // }, 1000)
-
-
-        // return async () => {
-        //     // Return a cleanup function
-        //     clearInterval(interval)
-        // };
     });
 };
-
-export const config = { runtime: 'edge' };
-
-let initialDate = Date.now();
-
-export function headers() {
-    return {
-        'x-edge-age': Date.now() - initialDate,
-    };
-}
