@@ -1,9 +1,7 @@
-import { LoaderFunctionArgs } from "@remix-run/node";
-// import { EventStream } from "remix-sse";
 import { emitter, eventStream } from "session.server";
 import { Events } from "types";
 
-export const loader = ({ request, params }: LoaderFunctionArgs) => {
+export const loader = ({ request, params }: { request: any, params: any }) => {
     return eventStream(request, (send) => {
         function handleUpdater(eventName: any, data?: any) {
             let dataReturn: Events = { event: eventName }
