@@ -1,5 +1,4 @@
 import { json, type LinksFunction } from "@remix-run/node";
-// import { RemixSseProvider } from 'remix-sse/client/index.js'
 import {
     Links,
     LiveReload,

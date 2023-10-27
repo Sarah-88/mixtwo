@@ -1,6 +1,6 @@
-# Welcome to Remix!
+# Mixtwo
 
-- [Remix Docs](https://remix.run/docs)
+A game inspired by Scrabble and Bingo
 
 ## Development
 
