@@ -1,4 +1,4 @@
-import { emitter, eventStream } from "session.server";
+import { emitter, eventStream } from "emitter.server";
 import { Events } from "types";
 
 export const loader = ({ request, params }: { request: any, params: any }) => {

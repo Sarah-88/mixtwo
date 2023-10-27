@@ -2,7 +2,7 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs, redirect } from
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import clientPromise from "mongoclient";
 import { destroySession, getSession } from "session.server";
-import { Player, type Events, type Game } from "types";
+import { Player, type Game } from "types";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const session = await getSession(request.headers.get("Cookie"))
