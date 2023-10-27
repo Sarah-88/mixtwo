@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction, redirect } from "@remix-run/node";
+import { json, type ActionArgs, type LoaderArgs, type MetaFunction, redirect } from "@vercel/remix";
 import { Form, useActionData } from "@remix-run/react";
 import { emitter } from "emitter.server";
 import clientPromise from "mongoclient";
@@ -6,19 +6,19 @@ import { useState } from "react";
 import { commitSession, destroySession, generateCard, getSession } from "session.server";
 import { Game, Player } from "types";
 
-export const meta: MetaFunction = () => {
+//@ts-ignore
+export const meta: MetaFunction<typeof loader> = () => {
     return [
         { title: "MixTwo" },
         { name: "description", content: "Bingo + Scrabble inspired" },
     ];
 };
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: LoaderArgs) => {
     const session = await getSession(request.headers.get("Cookie"))
     let headers: { [key: string]: any } = {}
     try {
         if (session.data.gameId) {
-            console.log('got game id?', session.data.gameId)
             const client = await clientPromise
             const db = client.db("mixtwo")
             const gameInfo = await db.collection<Game>("game").findOne({ gameId: session.data.gameId })
@@ -39,7 +39,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return json({}, headers)
 }
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }: ActionArgs) => {
     const data = await request.formData()
     const dataForm = Object.fromEntries(data)
     const session = await getSession(
@@ -184,13 +184,13 @@ export default function Index() {
                     <button type="submit" className="hover:shadow-md hover:bg-teal-700 hover:text-white text-teal-800 hover:border-teal-600 duration-500 border border-teal-800 transition-all rounded block py-2 w-full mt-10 font-comfortaa tracking-widest">Enter</button>
                 </div>
             </Form>
-            <div className="mt-8 max-w-5xl p-5 border-blue-200 mx-auto">
+            <div id="howto" className="mt-8 max-w-5xl p-5 border-white border-t mx-auto">
                 <h3 className="font-orbitron text-2xl text-teal-800 uppercase text-center pb-4">How to Play</h3>
                 <div className="flex justify-center max-w-2xl gap-4 items-start mx-auto">
                     <button type="button" onClick={() => setTab('words')} className={`font-comfortaa text-xl py-2 px-5 ${tab === 'words' ? "text-blue-700 border-b-4 border-blue-700" : "text-slate-500"}`}>Words</button>
                     <button type="button" onClick={() => setTab('numbers')} className={`font-comfortaa text-xl py-2 px-5 ${tab === 'numbers' ? "text-blue-700 border-b-4 border-blue-700" : "text-slate-500"}`}>Numbers</button>
                 </div>
-                <div className="mt-4">
+                <div className="mt-4 p-8">
                     <ol type="1" className="font-grandstander leading-7 list-decimal">
                         <li>Each player is given a randomly-generated 5x5 card with {tab} in each box.</li>
                         <li>Once the host starts the game, the {tab} on the card will be revealed.</li>

@@ -1,10 +1,10 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs, redirect } from "@remix-run/node";
+import { json, type LoaderArgs, redirect } from "@vercel/remix";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import clientPromise from "mongoclient";
 import { destroySession, getSession } from "session.server";
 import { Player, type Game } from "types";
 
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderArgs) => {
     const session = await getSession(request.headers.get("Cookie"))
     const client = await clientPromise
     const db = client.db("mixtwo")
@@ -29,12 +29,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
 
     return json({ gameInfo, players }, destroy)
 }
-
-export const action = async ({ request, params }: ActionFunctionArgs) => {
-
-    return json({})
-}
-
 
 export default function GameResults() {
     const { gameInfo, players } = useLoaderData<typeof loader>()

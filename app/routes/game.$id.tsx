@@ -1,18 +1,10 @@
-// import { configureAbly } from "@ably-labs/react-hooks";
-import { json, type LoaderFunctionArgs, type MetaFunction, redirect } from "@remix-run/node";
+import { json, type LoaderArgs, redirect } from "@vercel/remix";
 import { Outlet, useLoaderData } from "@remix-run/react";
 import { useState } from "react";
 import { destroySession, getSession } from "session.server";
 import Updater from "~/components/Updater";
 
-export const meta: MetaFunction = () => {
-    return [
-        { title: "MixTwo" },
-        { name: "description", content: "Bingo + Scrabble inspired" },
-    ];
-};
-
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderArgs) => {
     const session = await getSession(request.headers.get("Cookie"))
     if (session.data.gameId !== params.id && !request.url.includes(`game/${params.id}/results`)) {
         return redirect("/", {

@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction, redirect } from "@remix-run/node";
+import { json, type ActionArgs, type LoaderArgs, redirect } from "@vercel/remix";
 import { useLoaderData, useFetcher, useOutletContext, useNavigate } from "@remix-run/react";
 import { emitter } from "emitter.server";
 import clientPromise from "mongoclient";
@@ -6,14 +6,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { commitSession, destroySession, generateTiles, getSession } from "session.server";
 import { Events, Game, Player } from "types";
 
-export const meta: MetaFunction = () => {
-    return [
-        { title: "MixTwo" },
-        { name: "description", content: "Bingo + Scrabble inspired" },
-    ];
-};
-
-export const loader = async ({ request, params }: LoaderFunctionArgs) => {
+export const loader = async ({ request, params }: LoaderArgs) => {
     const session = await getSession(request.headers.get("Cookie"))
     const client = await clientPromise
     const db = client.db("mixtwo")
@@ -53,7 +46,7 @@ const checkCrossed = (crossed: string[][]) => {
     return rows.filter(a => a === 5).length > 0 || cols.filter(a => a === 5).length > 0 || diagonal1 === 5 || diagonal2 === 5
 }
 
-export const action = async ({ request, params }: ActionFunctionArgs) => {
+export const action = async ({ request, params }: ActionArgs) => {
     const data = await request.formData()
     const dataForm = Object.fromEntries(data)
     const gameMode = dataForm.mode as string
@@ -221,7 +214,6 @@ export default function GamePlay() {
 
     const submitAnswer = useCallback((bypass?: boolean) => {
         if (!gamePause || bypass) {
-            console.log('curr round in func', currRound)
             setGamePause(true)
             fetcher.submit(
                 { round: currRound, mode: loaderData.gameInfo.mode!, answer: answer.join('_'), bypass: !!bypass, paused: gamePause },
@@ -268,7 +260,6 @@ export default function GamePlay() {
             const gameStartTime = new Date(fetcher.data?.nextRound ?? loaderData.gameInfo.rounds[loaderData.gameInfo.rounds.length - 1].endAt).valueOf()
             if (gameStartTime - Date.now() > 0) {
                 setGamePause(false)
-                console.log('setting round to ', loaderData.gameInfo.rounds.length)
                 setCurrRound((prev) => {
                     if (prev < loaderData.gameInfo.rounds.length) return loaderData.gameInfo.rounds.length
                     return prev
@@ -277,14 +268,12 @@ export default function GamePlay() {
                 // return () => clearInterval(timer.current)
             }
         } else if (fetcher.data?.postData && !fetcher.data.success) {
-            console.log('setting unpause')
             setGamePause(false)
         }
     }, [loaderData.gameInfo.rounds, fetcher.data])
 
     useEffect(() => {
         if (context.event === "nextRound" && context.round) {
-            console.log('setting next round', context.round)
             setCurrRound(context.round)
             fetcher.load(`/game/${loaderData.gameInfo.gameId}/next`)
         } else if (context.event === "gameOver") {
