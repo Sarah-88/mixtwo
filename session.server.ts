@@ -1,6 +1,6 @@
 import { createCookieSessionStorage } from "@netlify/remix-runtime";
 import wordpiece from "app/json/wordpiece.json";
-import { EventEmitter } from "events";
+import { EventEmitter } from "node:events";
 
 type SessionData = {
     gameId: string;
