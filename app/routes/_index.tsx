@@ -1,9 +1,8 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction, redirect } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
-import { emitter } from "emitter.server";
 import clientPromise from "mongoclient.server";
 import { useState } from "react";
-import { commitSession, destroySession, generateCard, getSession } from "session.server";
+import { commitSession, destroySession, generateCard, getSession, emitter } from "session.server";
 import { Game, Player } from "types";
 
 //@ts-ignore

@@ -1,16 +1,3 @@
-import { EventEmitter } from "events";
-
-let emitter: EventEmitter
-if (process.env.NODE_ENV === "development") {
-    if (!global.__emitter) {
-        global.__emitter = new EventEmitter();
-    }
-    emitter = global.__emitter;
-
-} else {
-    emitter = new EventEmitter();
-}
-
 type InitFunction = (send: SendFunction) => CleanupFunction;
 type SendFunction = (event: string, data: string) => void;
 type CleanupFunction = () => void;
@@ -43,8 +30,8 @@ async function eventStream(request: Request, init: InitFunction) {
     });
 
     return new Response(stream, {
-        headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
+        headers: { "Content-Type": "text/event-stream" },
     });
 }
 
-export { emitter, eventStream };
+export { eventStream };

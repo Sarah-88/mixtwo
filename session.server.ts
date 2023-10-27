@@ -1,5 +1,6 @@
 import { createCookieSessionStorage } from "@netlify/remix-runtime";
 import wordpiece from "app/json/wordpiece.json";
+import { EventEmitter } from "events";
 
 type SessionData = {
     gameId: string;
@@ -83,4 +84,17 @@ const generateCard = (mode: 'numbers' | 'words') => {
     return card
 }
 
-export { getSession, commitSession, destroySession, generateCard };
+
+
+let emitter: EventEmitter
+if (process.env.NODE_ENV === "development") {
+    if (!global.__emitter) {
+        global.__emitter = new EventEmitter();
+    }
+    emitter = global.__emitter;
+
+} else {
+    emitter = new EventEmitter();
+}
+
+export { getSession, commitSession, destroySession, generateCard, emitter };

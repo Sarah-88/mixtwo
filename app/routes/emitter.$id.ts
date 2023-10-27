@@ -1,17 +1,7 @@
 import { LoaderFunctionArgs } from "@netlify/remix-runtime";
-import { emitter, eventStream } from "emitter.server";
+import { eventStream } from "emitter.server";
+import { emitter } from "session.server";
 import { Events } from "types";
-
-let initialDate = Date.now();
-
-export function headers() {
-    return {
-        'x-edge-age': Date.now() - initialDate,
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-    };
-}
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     return await eventStream(request, (send) => {

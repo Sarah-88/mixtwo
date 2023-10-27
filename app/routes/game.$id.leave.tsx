@@ -1,7 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { emitter } from "emitter.server";
 import clientPromise from "mongoclient.server";
-import { getSession } from "session.server";
+import { getSession, emitter } from "session.server";
 import { Game, Player } from "types";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {

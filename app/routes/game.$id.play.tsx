@@ -1,9 +1,8 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { useLoaderData, useFetcher, useOutletContext, useNavigate } from "@remix-run/react";
-import { emitter } from "emitter.server";
 import clientPromise from "mongoclient.server";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { commitSession, destroySession, generateTiles, getSession } from "session.server";
+import { commitSession, destroySession, generateTiles, getSession, emitter } from "session.server";
 import { Events, Game, Player } from "types";
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
