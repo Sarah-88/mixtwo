@@ -1,4 +1,4 @@
-import { json, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction, redirect } from "@remix-run/node";
+import { json, type ActionArgs, type LoaderArgs, type MetaFunction, redirect } from "@netlify/remix-runtime";
 import { Form, useActionData } from "@remix-run/react";
 import { emitter } from "emitter.server";
 import clientPromise from "mongoclient";
@@ -14,7 +14,7 @@ export const meta: MetaFunction<typeof loader> = () => {
     ];
 };
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
+export const loader = async ({ request }: LoaderArgs) => {
     const session = await getSession(request.headers.get("Cookie"))
     let headers: { [key: string]: any } = {}
     try {
@@ -39,7 +39,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return json({}, headers)
 }
 
-export const action = async ({ request }: ActionFunctionArgs) => {
+export const action = async ({ request }: ActionArgs) => {
     const data = await request.formData()
     const dataForm = Object.fromEntries(data)
     const session = await getSession(

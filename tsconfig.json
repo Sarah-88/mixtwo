@@ -2,7 +2,9 @@
     "include": [
         "remix.env.d.ts",
         "**/*.ts",
-        "**/*.tsx"
+        "**/*.tsx",
+        "server.js",
+        "remix.init/server.js"
     ],
     "compilerOptions": {
         "lib": [
@@ -13,10 +15,9 @@
         "isolatedModules": true,
         "esModuleInterop": true,
         "jsx": "react-jsx",
-        "moduleResolution": "Bundler",
+        "moduleResolution": "node",
         "resolveJsonModule": true,
         "target": "ES2022",
-        "module": "ES2022",
         "strict": true,
         "allowJs": true,
         "forceConsistentCasingInFileNames": true,

@@ -1,4 +1,4 @@
-import { json, type LinksFunction } from "@remix-run/node";
+import { json, type LinksFunction } from "@netlify/remix-runtime";
 import {
     Links,
     LiveReload,
