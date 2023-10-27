@@ -71,7 +71,6 @@ const generateCard = (mode: 'numbers' | 'words') => {
                     } else {
                         newBox = String(randomNum(idx % 2 > 0 ? 100 : 800, 4000))
                     }
-                    console.log('wtf', newBox, idx)
                 } else {
                     newBox = (idx % 2 > 0 ? getRandomWord(10, 999) : getRandomWord(5, 9))
                 }

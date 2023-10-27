@@ -48,7 +48,6 @@ export default function GameLobby() {
     const [presenceData, setPresenceData] = useState(playersList)
 
     useEffect(() => {
-        console.log('context change', context)
         if (context.event === "startGame") {
             navigate(`/game/${session.gameId}/play`)
         } else if (context.event === "playerJoin" && context.player) {
