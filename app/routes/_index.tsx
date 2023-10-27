@@ -45,68 +45,73 @@ export const action = async ({ request }: ActionArgs) => {
     const session = await getSession(
         request.headers.get("Cookie")
     );
-    const client = await clientPromise
-    const db = client.db("mixtwo")
-    if (dataForm.type === 'create') {
-        const gameId = Math.random().toString(36).slice(2).toUpperCase()
-        const insert = await db.collection("game").insertOne({ gameId, mode: dataForm.mode, rounds: [] })
-        if (insert.insertedId) {
-            const card = generateCard(dataForm.mode as "numbers" | "words")
-            let crossed: string[][] = []
-            for (let i = 0; i < 5; i++) {
-                crossed.push(Array(5).fill(""))
+    try {
+        const client = await clientPromise
+        const db = client.db("mixtwo")
+        if (dataForm.type === 'create') {
+            const gameId = Math.random().toString(36).slice(2).toUpperCase()
+            const insert = await db.collection("game").insertOne({ gameId, mode: dataForm.mode, rounds: [] })
+            if (insert.insertedId) {
+                const card = generateCard(dataForm.mode as "numbers" | "words")
+                let crossed: string[][] = []
+                for (let i = 0; i < 5; i++) {
+                    crossed.push(Array(5).fill(""))
+                }
+                const playerInsert = await db.collection("players").insertOne({ gameId, player: dataForm.player, card, rounds: [], crossed, active: true })
+                if (playerInsert.insertedId) {
+                    session.set("gameId", gameId)
+                    session.set("player", dataForm.player as string)
+                    session.set("card", card)
+                    session.set("host", true)
+                    session.set("crossed", crossed)
+                    session.set("mode", dataForm.mode as "numbers" | "words")
+                    return redirect(`/game/${gameId}`, {
+                        headers: {
+                            "Set-Cookie": await commitSession(session),
+                        },
+                    });
+                }
             }
-            const playerInsert = await db.collection("players").insertOne({ gameId, player: dataForm.player, card, rounds: [], crossed, active: true })
-            if (playerInsert.insertedId) {
-                session.set("gameId", gameId)
-                session.set("player", dataForm.player as string)
-                session.set("card", card)
-                session.set("host", true)
-                session.set("crossed", crossed)
-                session.set("mode", dataForm.mode as "numbers" | "words")
-                return redirect(`/game/${gameId}`, {
-                    headers: {
-                        "Set-Cookie": await commitSession(session),
-                    },
-                });
+            return json({ error: "Failed to create game", errorPos: '' })
+        } else {
+            const gameInfo = await db.collection<Game>("game").findOne({ gameId: dataForm.gameid })
+            if (gameInfo) {
+                if (gameInfo.endAt) {
+                    return json({ error: "This game has already ended", errorPos: 'gameid' })
+                } else if (gameInfo.startedAt && new Date(gameInfo.startedAt).valueOf() < Date.now()) {
+                    return json({ error: "This game is in progress", errorPos: 'gameid' })
+                }
+                const otherPlayers = await db.collection<Player>("players").findOne({ gameId: dataForm.gameid, player: dataForm.player })
+                if (otherPlayers) {
+                    return json({ error: "This player name has been taken for this game", errorPos: 'player' })
+                }
+                const card = generateCard(gameInfo.mode as "numbers" | "words")
+                let crossed: string[][] = []
+                for (let i = 0; i < 5; i++) {
+                    crossed.push(Array(5).fill(""))
+                }
+                const playerInsert = await db.collection("players").insertOne({ gameId: dataForm.gameid, player: dataForm.player, card, rounds: [], crossed, active: true })
+                if (playerInsert.insertedId) {
+                    session.set("gameId", gameInfo.gameId)
+                    session.set("player", dataForm.player as string)
+                    session.set("card", card)
+                    session.set("mode", gameInfo.mode)
+                    session.set("crossed", crossed)
+                    emitter.emit(`update-${gameInfo.gameId}`, "playerJoin", dataForm.player)
+                    emitter.emit(`notify-${gameInfo.gameId}`, `${dataForm.player} has joined!`)
+                    return redirect(`/game/${gameInfo.gameId}`, {
+                        headers: {
+                            "Set-Cookie": await commitSession(session),
+                        },
+                    });
+                }
+                return json({ error: "Failed to join the game", errorPos: '' })
             }
+            return json({ error: "Game does not exist", errorPos: 'gameid' })
         }
-        return json({ error: "Failed to create game", errorPos: '' })
-    } else {
-        const gameInfo = await db.collection<Game>("game").findOne({ gameId: dataForm.gameid })
-        if (gameInfo) {
-            if (gameInfo.endAt) {
-                return json({ error: "This game has already ended", errorPos: 'gameid' })
-            } else if (gameInfo.startedAt && new Date(gameInfo.startedAt).valueOf() < Date.now()) {
-                return json({ error: "This game is in progress", errorPos: 'gameid' })
-            }
-            const otherPlayers = await db.collection<Player>("players").findOne({ gameId: dataForm.gameid, player: dataForm.player })
-            if (otherPlayers) {
-                return json({ error: "This player name has been taken for this game", errorPos: 'player' })
-            }
-            const card = generateCard(gameInfo.mode as "numbers" | "words")
-            let crossed: string[][] = []
-            for (let i = 0; i < 5; i++) {
-                crossed.push(Array(5).fill(""))
-            }
-            const playerInsert = await db.collection("players").insertOne({ gameId: dataForm.gameid, player: dataForm.player, card, rounds: [], crossed, active: true })
-            if (playerInsert.insertedId) {
-                session.set("gameId", gameInfo.gameId)
-                session.set("player", dataForm.player as string)
-                session.set("card", card)
-                session.set("mode", gameInfo.mode)
-                session.set("crossed", crossed)
-                emitter.emit(`update-${gameInfo.gameId}`, "playerJoin", dataForm.player)
-                emitter.emit(`notify-${gameInfo.gameId}`, `${dataForm.player} has joined!`)
-                return redirect(`/game/${gameInfo.gameId}`, {
-                    headers: {
-                        "Set-Cookie": await commitSession(session),
-                    },
-                });
-            }
-            return json({ error: "Failed to join the game", errorPos: '' })
-        }
-        return json({ error: "Game does not exist", errorPos: 'gameid' })
+    } catch (e) {
+        console.log(e)
+        return json({ error: "Failed to connect to database", errorPos: '' })
     }
 }
 
