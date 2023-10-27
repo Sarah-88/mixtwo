@@ -1,4 +1,4 @@
-import { createCookieSessionStorage } from "@vercel/remix";
+import { createCookieSessionStorage } from "@remix-run/node";
 import wordpiece from "app/json/wordpiece.json";
 
 type SessionData = {

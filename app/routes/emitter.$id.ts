@@ -1,4 +1,4 @@
-import { LoaderArgs } from "@vercel/remix";
+import { LoaderFunctionArgs } from "@remix-run/node";
 import { emitter, eventStream } from "emitter.server";
 import { Events } from "types";
 
@@ -15,7 +15,7 @@ export function headers() {
     };
 }
 
-export const loader = async ({ request, params }: LoaderArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     return await eventStream(request, (send) => {
         function handleUpdater(eventName: any, data?: any) {
             let dataReturn: Events = { event: eventName }
