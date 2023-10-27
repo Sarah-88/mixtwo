@@ -1,8 +1,8 @@
-import { json, type LoaderArgs } from "@netlify/remix-runtime";
-import clientPromise from "mongoclient";
+import { json, type LoaderFunctionArgs } from "@remix-run/node";
+import clientPromise from "mongoclient.server";
 import { Game } from "types";
 
-export const loader = async ({ params }: LoaderArgs) => {
+export const loader = async ({ params }: LoaderFunctionArgs) => {
     const client = await clientPromise
     const db = client.db("mixtwo")
     const res = await db.collection<Game>("game").findOne({ gameId: params.id })

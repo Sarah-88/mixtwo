@@ -1,12 +1,12 @@
-import { json, type ActionArgs, type LoaderArgs, redirect } from "@netlify/remix-runtime";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { useLoaderData, useFetcher, useOutletContext, useNavigate } from "@remix-run/react";
 import { emitter } from "emitter.server";
-import clientPromise from "mongoclient";
+import clientPromise from "mongoclient.server";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { commitSession, destroySession, generateTiles, getSession } from "session.server";
 import { Events, Game, Player } from "types";
 
-export const loader = async ({ request, params }: LoaderArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const session = await getSession(request.headers.get("Cookie"))
     const client = await clientPromise
     const db = client.db("mixtwo")
@@ -46,7 +46,7 @@ const checkCrossed = (crossed: string[][]) => {
     return rows.filter(a => a === 5).length > 0 || cols.filter(a => a === 5).length > 0 || diagonal1 === 5 || diagonal2 === 5
 }
 
-export const action = async ({ request, params }: ActionArgs) => {
+export const action = async ({ request, params }: ActionFunctionArgs) => {
     const data = await request.formData()
     const dataForm = Object.fromEntries(data)
     const gameMode = dataForm.mode as string

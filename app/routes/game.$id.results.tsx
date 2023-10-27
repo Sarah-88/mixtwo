@@ -1,10 +1,10 @@
-import { json, type LoaderArgs, redirect } from "@netlify/remix-runtime";
+import { json, type LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
-import clientPromise from "mongoclient";
+import clientPromise from "mongoclient.server";
 import { destroySession, getSession } from "session.server";
 import { Player, type Game } from "types";
 
-export const loader = async ({ request, params }: LoaderArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const session = await getSession(request.headers.get("Cookie"))
     const client = await clientPromise
     const db = client.db("mixtwo")

@@ -1,12 +1,12 @@
-import { json, type ActionArgs, type LoaderArgs, redirect } from "@netlify/remix-runtime";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { Form, useLoaderData, useNavigate, useOutletContext } from "@remix-run/react";
-import clientPromise from "mongoclient";
+import clientPromise from "mongoclient.server";
 import { destroySession, generateTiles, getSession } from "session.server";
 import { useEffect, useState } from "react";
 import { Player, type Events, type Game } from "types";
 import { emitter } from "emitter.server";
 
-export const loader = async ({ request, params }: LoaderArgs) => {
+export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const session = await getSession(request.headers.get("Cookie"))
     const client = await clientPromise
     const db = client.db("mixtwo")
@@ -23,7 +23,7 @@ export const loader = async ({ request, params }: LoaderArgs) => {
     return json({ session: session.data, playersList: playersList.map(p => p.player) })
 }
 
-export const action = async ({ request, params }: ActionArgs) => {
+export const action = async ({ request, params }: ActionFunctionArgs) => {
     const data = await request.formData()
     const dataForm = Object.fromEntries(data)
     const client = await clientPromise

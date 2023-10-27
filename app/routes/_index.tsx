@@ -1,7 +1,7 @@
-import { json, type ActionArgs, type LoaderArgs, type MetaFunction, redirect } from "@netlify/remix-runtime";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFunction, redirect } from "@remix-run/node";
 import { Form, useActionData } from "@remix-run/react";
 import { emitter } from "emitter.server";
-import clientPromise from "mongoclient";
+import clientPromise from "mongoclient.server";
 import { useState } from "react";
 import { commitSession, destroySession, generateCard, getSession } from "session.server";
 import { Game, Player } from "types";
@@ -14,7 +14,7 @@ export const meta: MetaFunction<typeof loader> = () => {
     ];
 };
 
-export const loader = async ({ request }: LoaderArgs) => {
+export const loader = async ({ request }: LoaderFunctionArgs) => {
     const session = await getSession(request.headers.get("Cookie"))
     let headers: { [key: string]: any } = {}
     try {
@@ -39,7 +39,7 @@ export const loader = async ({ request }: LoaderArgs) => {
     return json({}, headers)
 }
 
-export const action = async ({ request }: ActionArgs) => {
+export const action = async ({ request }: ActionFunctionArgs) => {
     const data = await request.formData()
     const dataForm = Object.fromEntries(data)
     const session = await getSession(

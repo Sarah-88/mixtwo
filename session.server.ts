@@ -1,4 +1,4 @@
-import { createCookieSessionStorage } from "@remix-run/node";
+import { createCookieSessionStorage } from "@netlify/remix-runtime";
 import wordpiece from "app/json/wordpiece.json";
 
 type SessionData = {
