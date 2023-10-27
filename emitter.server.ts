@@ -15,7 +15,7 @@ type InitFunction = (send: SendFunction) => CleanupFunction;
 type SendFunction = (event: string, data: string) => void;
 type CleanupFunction = () => void;
 
-function eventStream(request: Request, init: InitFunction) {
+async function eventStream(request: Request, init: InitFunction) {
     let stream = new ReadableStream({
         start(controller) {
             let encoder = new TextEncoder();
@@ -43,7 +43,7 @@ function eventStream(request: Request, init: InitFunction) {
     });
 
     return new Response(stream, {
-        headers: { "Content-Type": "text/event-stream" },
+        headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
     });
 }
 

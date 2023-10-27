@@ -9,11 +9,14 @@ let initialDate = Date.now();
 export function headers() {
     return {
         'x-edge-age': Date.now() - initialDate,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
     };
 }
 
-export const loader = ({ request, params }: LoaderArgs) => {
-    return eventStream(request, (send) => {
+export const loader = async ({ request, params }: LoaderArgs) => {
+    return await eventStream(request, (send) => {
         function handleUpdater(eventName: any, data?: any) {
             let dataReturn: Events = { event: eventName }
             switch (eventName) {
@@ -46,5 +49,5 @@ export const loader = ({ request, params }: LoaderArgs) => {
             emitter.removeListener(`update-${params.id}`, handleUpdater)
             emitter.removeListener(`notify-${params.id}`, handleMsg)
         };
-    });
+    })
 };
