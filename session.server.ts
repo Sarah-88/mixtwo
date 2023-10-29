@@ -1,4 +1,4 @@
-import { createCookieSessionStorage } from "@netlify/remix-runtime";
+import { createCookieSessionStorage } from "@remix-run/node";
 import wordpiece from "app/json/wordpiece.json";
 import Ably from "ably/promises.js"
 
