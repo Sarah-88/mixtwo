@@ -6,15 +6,19 @@ const Updater = (props: { gameId: string, player: string, receiveUpdate: (param:
 
     const [channel] = useChannel(`mixtwo-${props.gameId}`, (msg: { name: string, data: any }) => {
         if (msg.name === 'update') {
-            setTimeout(() => {
+            const tmout = setTimeout(() => {
                 props.receiveUpdate(msg.data)
-            }, msg.data.event === 'nextRound' ? 1000 : 1)
+                clearTimeout(tmout)
+            }, msg.data.event === 'nextRound' ? 1500 : 1)
         } else if (msg.name === 'notification') {
-            setMsg(msg.data)
+            const initTimer = setTimeout(() => {
+                setMsg(msg.data)
+                clearTimeout(initTimer)
+            }, 1000)
             const tmout = setTimeout(() => {
                 setMsg('')
                 clearTimeout(tmout)
-            }, 4000)
+            }, 5000)
         }
     })
 
