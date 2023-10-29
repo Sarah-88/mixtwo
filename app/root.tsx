@@ -1,4 +1,4 @@
-import { json, type LinksFunction } from "@remix-run/node";
+import type { LinksFunction } from "@remix-run/node";
 import {
     Links,
     LiveReload,
@@ -9,6 +9,8 @@ import {
 } from "@remix-run/react";
 import stylesheet from "~/tailwind.css";
 import Loader from "./components/Loader";
+import { useEffect } from "react"
+import { configureAbly } from "@ably-labs/react-hooks"
 
 export const links: LinksFunction = () => [
     { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -17,11 +19,12 @@ export const links: LinksFunction = () => [
     { rel: "stylesheet", href: stylesheet },
 ];
 
-export const action = () => {
-    return json({})
-}
+// configureAbly({ authUrl: "http://localhost:3000/ablyauth" })
 
 export default function App() {
+    useEffect(() => {
+        // window.ablyRealtime.connect()
+    }, [])
     return (
         <html lang="en">
             <head>

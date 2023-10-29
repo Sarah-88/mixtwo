@@ -2,8 +2,9 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs, redirect } from
 import { useLoaderData, useFetcher, useOutletContext, useNavigate } from "@remix-run/react";
 import clientPromise from "mongoclient.server";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { commitSession, destroySession, generateTiles, getSession, emitter } from "session.server";
+import { commitSession, destroySession, generateTiles, getSession, getAblyClient } from "session.server";
 import { Events, Game, Player } from "types";
+// import { usePresence } from "@ably-labs/react-hooks"
 
 export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     const session = await getSession(request.headers.get("Cookie"))
@@ -24,10 +25,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
         })
     }
     const playerInfo = await db.collection<Player>("players").findOne({ gameId: params.id, player: session.get("player") })
-    if (!playerInfo?.active) {
-        await db.collection<Player>("players").updateOne({ gameId: params.id, player: session.get("player") }, { $set: { active: true } })
-        emitter.emit("notify", `${session.get("player")} has rejoined the game`)
-    }
     return json({ defaultTime: Number(process.env.TIMER), submitted: playerInfo?.rounds.length ?? 0, data: session.data, gameInfo: gameInfo })
 }
 
@@ -52,6 +49,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const answer = gameMode === "words" ? String(dataForm.answer).toLowerCase().replace(/_/g, '') : String(dataForm.answer)
     const bypass = dataForm.bypass === "true"
     const paused = dataForm.paused === "true"
+    const totalPlayers = Number(dataForm.total)
     const session = await getSession(
         request.headers.get("Cookie")
     );
@@ -170,16 +168,15 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
         if (wonGame) {
             await db.collection("game").updateOne({ gameId: params.id }, { $set: { winner: session.get("player"), endAt: new Date() }, $inc: { [`rounds.${round - 1}.playerCompleted`]: 1 } })
 
-            emitter.emit(`update-${params.id}`, "gameOver", session.get("player"))
-            emitter.emit(`notify-${params.id}`, `${session.get("player")} has won the game!`)
+            const channel = await getAblyClient(params.id as string, 'update', { event: "gameOver", name: session.get("player") })
+            await getAblyClient(params.id as string, 'notification', `${session.get("player")} has won the game!`, channel)
         } else {
             await db.collection("game").updateOne({ gameId: params.id }, { $inc: { [`rounds.${round - 1}.playerCompleted`]: 1 } })
 
             const latestGameData = await db.collection<Game>("game").findOne({ gameId: params.id })
-            const latestPlayerList = await db.collection("players").countDocuments({ gameId: params.id, active: true })
-            if (latestGameData && (latestPlayerList === latestGameData.rounds[round - 1].playerCompleted || (bypass && latestGameData.rounds.length === round))) {
-                emitter.emit(`update-${params.id}`, "nextRound", round + 1)
-                emitter.emit(`notify-${params.id}`, `Round ${round + 1} started!`)
+            if (latestGameData && (totalPlayers === latestGameData.rounds[round - 1].playerCompleted || (bypass && latestGameData.rounds.length === round))) {
+                const channel = await getAblyClient(params.id as string, 'update', { event: "nextRound", round: round + 1 })
+                await getAblyClient(params.id as string, 'notification', `Round ${round + 1} started!`, channel)
                 const currDate = new Date()
                 currDate.setMinutes(currDate.getMinutes() + Number(process.env.TIMER))
                 const res = await db.collection("game").updateOne({ gameId: params.id }, { $set: { [`rounds.${round - 1}.endAt`]: new Date() } })
@@ -207,20 +204,21 @@ export default function GamePlay() {
     const [time, setTime] = useState([loaderData.defaultTime * 60, ("0" + loaderData.defaultTime).slice(-2), "00"])
     const [currRound, setCurrRound] = useState(loaderData.gameInfo.rounds.length ?? 0)
     const [answer, setAnswer] = useState<string[]>([])
-    const context = useOutletContext<Events>()
+    const { update, players } = useOutletContext<{ update: Events, players: { data: string }[] }>()
     const timer = useRef<number>()
+
     const navigate = useNavigate()
 
     const submitAnswer = useCallback((bypass?: boolean) => {
         if (!gamePause || bypass) {
             setGamePause(true)
             fetcher.submit(
-                { round: currRound, mode: loaderData.gameInfo.mode!, answer: answer.join('_'), bypass: !!bypass, paused: gamePause },
+                { round: currRound, mode: loaderData.gameInfo.mode!, answer: answer.join('_'), bypass: !!bypass, paused: gamePause, total: players.length },
                 { method: "POST" }
             )
             setAnswer([])
         }
-    }, [gamePause, answer, currRound])
+    }, [gamePause, answer, currRound, players.length])
 
     const setTimer = useCallback((gameStartTimestamp: number) => {
         if (timer.current) {
@@ -272,29 +270,23 @@ export default function GamePlay() {
     }, [loaderData.gameInfo.rounds, fetcher.data])
 
     useEffect(() => {
-        if (context.event === "nextRound" && context.round) {
-            setCurrRound(context.round)
+        if (update.event === "nextRound" && update.round) {
+            setCurrRound(update.round)
             fetcher.load(`/game/${loaderData.gameInfo.gameId}/next`)
-        } else if (context.event === "gameOver") {
+        } else if (update.event === "gameOver") {
             setGamePause(true)
             clearInterval(timer.current)
             setTimeout(() => {
                 navigate(`/game/${loaderData.gameInfo.gameId}/results`)
             }, 3000)
         }
-    }, [context.round])
+    }, [update.round, update.event])
 
     useEffect(() => {
         if (loaderData.submitted >= loaderData.gameInfo.rounds.length) {
             setGamePause(true)
         }
     }, [loaderData.submitted, loaderData.gameInfo.rounds.length])
-
-    useEffect(() => {
-        return () => {
-            navigator.sendBeacon(`/game/${loaderData.gameInfo.gameId}/leave`)
-        }
-    }, [])
     return (
         <div className="flex items-start gap-3 m-auto mt-10 justify-center">
             <div className="bg-white p-2 flex-1 max-w-lg">
@@ -308,7 +300,7 @@ export default function GamePlay() {
                 </div>
             </div>
             <div className="min-w-[240px] flex flex-col gap-1">
-                <h2>Round #{context.round || loaderData.gameInfo.rounds.length}</h2>
+                <h2>Round #{update.round || loaderData.gameInfo.rounds.length}</h2>
                 <div className="border rounded border-blue-200 p-1 flex justify-center gap-1 font-orbitron text-2xl items-center">
                     <div className="border-blue-200 border rounded px-2 py-1 bg-white shadow-inner">{time[1]}</div>
                     <span>:</span>
@@ -340,9 +332,19 @@ export default function GamePlay() {
                     Submit Answer
                 </button>
                 {gamePause ? <p className="font-comfortaa max-w-[240px]">
-                    {(fetcher.state === "idle" ? "Waiting for other players..." : "Submitting...")}
+                    {(fetcher.state === "idle"
+                        ? `Waiting for other players...`
+                        : "Submitting...")}
                 </p> :
                     !fetcher.data?.success && fetcher.data?.message && <p className="font-comfortaa text-red-500 max-w-[240px]">{fetcher.data.message}</p>}
+                {loaderData.data.host &&
+                    <div className="bg-white p-2 mt-5">
+                        <h4 className="font-comfortaa mb-2">Players</h4>
+                        <ul className="bg-blue-100 p-1 rounded flex flex-col gap-1">
+                            {players.map((msg, idx) => <li key={`pd-${idx}`} className="bg-white px-2 py-1 text-sm font-grandstander rounded">{msg.data}</li>)}
+                        </ul>
+                    </div>
+                }
             </div>
         </div>
     );

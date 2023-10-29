@@ -1,30 +1,29 @@
 import { useEffect, useState } from 'react'
+import { useChannel, usePresence } from "@ably-labs/react-hooks";
 
-const Updater = (props: { gameId: string, receiveUpdate: (param: { name: string, data: any }) => void }) => {
+const Updater = (props: { gameId: string, player: string, receiveUpdate: (param: { name: string, data: any }) => void, setPlayers: (list: { data: string }[]) => void }) => {
     const [msg, setMsg] = useState('')
 
-    useEffect(() => {
-        let eventSource = new EventSource(`/emitter/${props.gameId}`);
-        eventSource.addEventListener(`notification-${props.gameId}`, msgHandler);
-        eventSource.addEventListener(`update-${props.gameId}`, updateHandler)
-
-        function msgHandler(event: MessageEvent) {
-            setMsg(event.data || "unknown");
-            const timeout = setTimeout(() => {
+    const [channel] = useChannel(`mixtwo-${props.gameId}`, (msg: { name: string, data: any }) => {
+        if (msg.name === 'update') {
+            setTimeout(() => {
+                props.receiveUpdate(msg.data)
+            }, msg.data.event === 'nextRound' ? 1000 : 1)
+        } else if (msg.name === 'notification') {
+            setMsg(msg.data)
+            const tmout = setTimeout(() => {
                 setMsg('')
-                clearTimeout(timeout)
+                clearTimeout(tmout)
             }, 4000)
         }
+    })
 
-        function updateHandler(event: MessageEvent<string>) {
-            const parsed = JSON.parse(event.data)
-            props.receiveUpdate(parsed)
-        }
-
-        return () => {
-            eventSource.removeEventListener(`notification-${props.gameId}`, msgHandler);
-            eventSource.removeEventListener(`update-${props.gameId}`, updateHandler);
-        };
+    const [presenceData] = usePresence(`mixtwo-${props.gameId}`, props.player)
+    useEffect(() => {
+        props.setPlayers(presenceData)
+    }, [presenceData])
+    useEffect(() => {
+        return () => channel.unsubscribe()
     }, [])
     return <div className={`fixed left-0 right-0 transition-all ${msg ? 'top-20 opacity-100' : 'top-0 opacity-0 pointer-events-none'}`}>
         <div className="m-auto max-w-lg flex justify-center">

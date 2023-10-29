@@ -14,7 +14,6 @@ export type Player = {
     card: string[][];
     rounds: string[];
     crossed: string[][];
-    active?: boolean;
 }
 
 export type Events = {

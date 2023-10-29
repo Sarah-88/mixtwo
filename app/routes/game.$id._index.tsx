@@ -1,7 +1,7 @@
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs, redirect } from "@remix-run/node";
 import { Form, useLoaderData, useNavigate, useOutletContext } from "@remix-run/react";
 import clientPromise from "mongoclient.server";
-import { destroySession, generateTiles, getSession, emitter } from "session.server";
+import { destroySession, generateTiles, getSession, getAblyClient } from "session.server";
 import { useEffect, useState } from "react";
 import { Player, type Events, type Game } from "types";
 
@@ -17,9 +17,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
             },
         })
     }
-    const playerQ = db.collection<Player>("players").find({ gameId: params.id })
-    const playersList = await playerQ.toArray()
-    return json({ session: session.data, playersList: playersList.map(p => p.player) })
+    return json({ session: session.data })
 }
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
@@ -32,7 +30,7 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
     const playerTotal = Number(dataForm.playernum)
     const res = await db.collection("game").updateOne({ gameId: params.id }, { $set: { startedAt: new Date(), totalPlayers: playerTotal }, $push: { rounds: { endAt: currDate, playerCompleted: 0, tiles: generateTiles(dataForm.mode as string) } } })
     if (res.modifiedCount === 1) {
-        emitter.emit(`update-${params.id}`, "startGame")
+        await getAblyClient(params.id as string, 'update', { event: "startGame" })
         return redirect(`/game/${params.id}/play`)
     }
     return json({})
@@ -41,24 +39,14 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
 const blanks = Array(25).fill("?")
 
 export default function GameLobby() {
-    const { session, playersList } = useLoaderData<typeof loader>()
-    const context = useOutletContext<Events>()
+    const { session } = useLoaderData<typeof loader>()
+    const { update, players } = useOutletContext<{ update: Events, players: { data: string }[] }>()
     const navigate = useNavigate()
-    const [presenceData, setPresenceData] = useState(playersList)
-
     useEffect(() => {
-        if (context.event === "startGame") {
+        if (update.event === "startGame") {
             navigate(`/game/${session.gameId}/play`)
-        } else if (context.event === "playerJoin" && context.player) {
-            setPresenceData(prev => {
-                if (context.player && !prev.includes(context.player)) {
-                    return [...prev, context.player]
-                } else {
-                    return prev
-                }
-            })
         }
-    }, [context])
+    }, [update])
     return (
         <div className="flex items-start gap-3 m-auto mt-10 justify-center">
             <div className="bg-white p-2 flex-1 max-w-lg">
@@ -71,9 +59,9 @@ export default function GameLobby() {
             <Form method="post" className="border rounded border-blue-200 w-60 bg-white p-1">
                 <h4 className="font-comfortaa text-xl text-center p-2">Players</h4>
                 <ul className="bg-blue-100 p-1 rounded flex flex-col gap-1">
-                    {presenceData.map((msg, idx) => <li key={`pd-${idx}`} className="bg-white px-2 py-1 text-sm font-grandstander rounded">{msg}</li>)}
+                    {players.map((msg, idx) => <li key={`pd-${idx}`} className="bg-white px-2 py-1 text-sm font-grandstander rounded">{msg.data}</li>)}
                 </ul>
-                <input type="hidden" name="playernum" value={presenceData.length} />
+                <input type="hidden" name="playernum" value={players.length} />
                 <input type="hidden" name="mode" value={session.mode} />
                 {session.host ?
                     <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white font-comfortaa w-full rounded py-2 mt-1">Start Game</button>

@@ -2,7 +2,7 @@ import { json, type ActionFunctionArgs, type LoaderFunctionArgs, type MetaFuncti
 import { Form, useActionData } from "@remix-run/react";
 import clientPromise from "mongoclient.server";
 import { useState } from "react";
-import { commitSession, destroySession, generateCard, getSession, emitter } from "session.server";
+import { commitSession, destroySession, generateCard, getSession } from "session.server";
 import { Game, Player } from "types";
 
 //@ts-ignore
@@ -96,8 +96,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
                     session.set("card", card)
                     session.set("mode", gameInfo.mode)
                     session.set("crossed", crossed)
-                    emitter.emit(`update-${gameInfo.gameId}`, "playerJoin", dataForm.player)
-                    emitter.emit(`notify-${gameInfo.gameId}`, `${dataForm.player} has joined!`)
                     return redirect(`/game/${gameInfo.gameId}`, {
                         headers: {
                             "Set-Cookie": await commitSession(session),

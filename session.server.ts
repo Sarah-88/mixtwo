@@ -1,6 +1,6 @@
 import { createCookieSessionStorage } from "@netlify/remix-runtime";
 import wordpiece from "app/json/wordpiece.json";
-import { EventEmitter } from "node:events";
+import Ably from "ably/promises.js"
 
 type SessionData = {
     gameId: string;
@@ -84,17 +84,19 @@ const generateCard = (mode: 'numbers' | 'words') => {
     return card
 }
 
-
-
-let emitter: EventEmitter
-if (process.env.NODE_ENV === "development") {
-    if (!global.__emitter) {
-        global.__emitter = new EventEmitter();
+const getAblyClient = async (gameId: string, type: string, data: Object, channelProps?: Ably.Types.RealtimeChannelPromise) => {
+    let channel: Ably.Types.RealtimeChannelPromise
+    if (!channelProps) {
+        const ablyClient = new Ably.Realtime(process.env.ABLY_API_KEY!);
+        channel = ablyClient.channels.get(`mixtwo-${gameId}`);
+    } else {
+        channel = channelProps
     }
-    emitter = global.__emitter;
-
-} else {
-    emitter = new EventEmitter();
+    await channel.publish({
+        name: type,
+        data: data
+    });
+    return channel
 }
 
-export { getSession, commitSession, destroySession, generateCard, emitter };
+export { getSession, commitSession, destroySession, generateCard, getAblyClient };
